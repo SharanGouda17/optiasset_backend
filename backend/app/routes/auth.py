@@ -4,12 +4,10 @@ from fastapi.security import OAuth2PasswordRequestForm
 
 from app.database import SessionLocal
 from app.models import User
-from app.auth import verify_password, create_access_token
+from app.auth import verify_password, create_access_token, hash_password
 
-# ✅ THIS LINE IS REQUIRED
 router = APIRouter()
 
-# DB dependency
 def get_db():
     db = SessionLocal()
     try:
@@ -17,7 +15,6 @@ def get_db():
     finally:
         db.close()
 
-# ✅ LOGIN ROUTE
 @router.post("/login")
 def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
@@ -34,3 +31,13 @@ def login(
         "access_token": token,
         "token_type": "bearer"
     }
+
+# ✅ TEMP: Reset admin password
+@router.get("/reset-admin")
+def reset_admin(db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == "admin@assetvault.com").first()
+    if user:
+        user.hashed_password = hash_password("admin123")
+        db.commit()
+        return {"message": "✅ Password reset successfully!"}
+    return {"message": "❌ User not found"}
